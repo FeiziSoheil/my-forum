@@ -1,4 +1,4 @@
-import { signAccessToken } from "@/lib/auth/jwt";
+import { signAccessToken, signRefreshToken } from "@/lib/auth/jwt";
 import { dbConnect } from "@/lib/db/mongodb";
 import { UserModel } from "@/models/User";
 import { RegisterRequest, User } from "@/types/user";
@@ -34,7 +34,7 @@ export const POST = async (req: NextRequest) => {
         const user: User = await UserModel.create({ username, fullname, email, password })
 
         const accessToken = await signAccessToken({ uid: user._id })
-        const refreshToken = await signAccessToken({ uid: user._id })
+        const refreshToken = await signRefreshToken({ uid: user._id })
 
         const resp = NextResponse.json({ msg: 'ok' }, { status: 201 })
         resp.cookies.set('atk', accessToken, { httpOnly: true, secure: false, sameSite: 'lax', path: '/', maxAge: 15 * 60 });
