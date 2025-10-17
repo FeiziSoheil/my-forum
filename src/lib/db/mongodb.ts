@@ -1,9 +1,10 @@
-import { Mongoose } from 'mongoose';
+import mongoose from 'mongoose';
 
 const MONGODB_URI = process.env.MONGODB_URI!;
 
 interface GlobalMongoose {
-  mongoose?: Mongoose;
+  conn?: typeof mongoose | null;
+  promise?: Promise<typeof mongoose> | null;
 }
 
 declare global {
@@ -12,12 +13,31 @@ declare global {
 
 let cached = global.mongoose;
 
-if (!cached) cached = global.mongoose = {};
+if (!cached) {
+  cached = global.mongoose = { conn: null, promise: null };
+}
 
 export async function dbConnect() {
-  if (cached.mongoose) return cached.mongoose;
-  const mongoose = new Mongoose();
-  await mongoose.connect(MONGODB_URI);
-  cached.mongoose = mongoose;
-  return mongoose;
+  if (cached.conn) {
+    return cached.conn;
+  }
+
+  if (!cached.promise) {
+    const opts = {
+      bufferCommands: false,
+    };
+
+    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
+      return mongoose;
+    });
+  }
+
+  try {
+    cached.conn = await cached.promise;
+  } catch (e) {
+    cached.promise = null;
+    throw e;
+  }
+
+  return cached.conn;
 }

@@ -1,3 +1,4 @@
+import { hashPassword } from "@/lib/auth/helper";
 import { signAccessToken, signRefreshToken } from "@/lib/auth/jwt";
 import { dbConnect } from "@/lib/db/mongodb";
 import { UserModel } from "@/models/User";
@@ -31,10 +32,12 @@ export const POST = async (req: NextRequest) => {
             return NextResponse.json({ msg: 'User exists' }, { status: 409 });
         }
 
-        const user: User = await UserModel.create({ username, fullname, email, password })
+        const hashedPassword = await hashPassword(password)
 
-        const accessToken = await signAccessToken({ uid: user._id })
-        const refreshToken = await signRefreshToken({ uid: user._id })
+        const user: User = await UserModel.create({ username, fullname, email, password:hashedPassword })
+
+        const accessToken = await signAccessToken({ uid: user._id?.toString() })
+        const refreshToken = await signRefreshToken({ uid: user._id?.toString() })
 
         const resp = NextResponse.json({ msg: 'ok' }, { status: 201 })
         resp.cookies.set('atk', accessToken, { httpOnly: true, secure: false, sameSite: 'lax', path: '/', maxAge: 15 * 60 });

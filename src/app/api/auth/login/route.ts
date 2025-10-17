@@ -11,13 +11,22 @@ export const POST  = async (req:NextRequest) => {
         await dbConnect()
 
         const body : loginRequest =await req.json()
-        const {username,password , email} = body
+        const {loginId ,password } = body
 
-    if (!username || !password || !email) {
-        return NextResponse.json({ error: "Username and password are required" }, { status: 400 });
-    }
+        if (!password) {
+            return NextResponse.json(
+              { error: 'Password is required' },
+              { status: 400 }
+            );
+          }
+          if (!loginId) {
+            return NextResponse.json(
+              { error: 'loginId is required' },
+              { status: 400 }
+            );
+          }
 
-    const user = await UserModel.findOne({$or:[{username},{email}]})
+    const user = await UserModel.findOne({$or:[{email:loginId},{username:loginId}]})
 
     if(!user){
         return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
@@ -28,10 +37,10 @@ export const POST  = async (req:NextRequest) => {
         return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
     }
     
-    const accessToken = await signAccessToken({uid:user._id})
-    const refreshToken = await signRefreshToken({uid:user._id})
+    const accessToken = await signAccessToken({uid:user._id.toString()})
+    const refreshToken = await signRefreshToken({uid:user._id.toString()})
 
-    const resp = NextResponse.json({msg:'ok'},{status:200})
+    const resp = NextResponse.json({ msg: 'ok', data: user }, { status: 200 });
     resp.cookies.set('atk', accessToken, { httpOnly: true, secure: false, sameSite: 'lax', path: '/', maxAge: 15 * 60 });
 
     resp.cookies.set('rtk', refreshToken, { httpOnly: true, secure: false, sameSite: 'lax', path: '/', maxAge: 7 * 24 * 3600 });
