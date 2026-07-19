@@ -1,18 +1,23 @@
 {
-  "name": "my-forum",
+  "name": "parakgram",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "migrate:follows": "npx --yes tsx scripts/backfillFollows.ts",
+    "precompute:recommendations": "npx --yes tsx scripts/computeTrending.ts",
+    "smoke:recommendations": "npx --yes tsx scripts/smoke-recommendations.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
     "@radix-ui/react-avatar": "^1.1.10",
+    "@radix-ui/react-dialog": "^1.1.19",
     "@radix-ui/react-dropdown-menu": "^2.1.16",
     "@radix-ui/react-label": "^2.1.7",
+    "@radix-ui/react-slider": "^1.4.3",
     "@radix-ui/react-slot": "^1.2.3",
     "@radix-ui/react-tabs": "^1.1.13",
     "@tanstack/react-query": "^5.90.3",
@@ -23,6 +28,7 @@
     "formidable": "^3.5.4",
     "framer-motion": "^12.23.24",
     "jose": "^6.1.0",
+    "lottie-react": "^2.4.1",
     "lucide-react": "^0.545.0",
     "mongodb": "^6.20.0",
     "mongoose": "^8.19.1",
@@ -30,8 +36,10 @@
     "next-themes": "^0.4.6",
     "react": "19.1.0",
     "react-dom": "19.1.0",
+    "react-easy-crop": "^6.2.2",
     "react-hook-form": "^7.65.0",
     "sonner": "^2.0.7",
+    "swiper": "^12.0.3",
     "tailwind-merge": "^3.3.1",
     "zod": "^4.1.12"
   },

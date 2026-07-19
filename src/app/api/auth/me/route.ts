@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
     const userId = payload.uid as string;
 
     const user = await UserModel.findById(userId).select('-password');
-    if (!user) return NextResponse.json({ msg: 'User not found' }, { status: 404 });
+    if (!user || user.isDeleted) return NextResponse.json({ msg: 'User not found' }, { status: 404 });
 
     return NextResponse.json({ user });
   } catch (err: any) {

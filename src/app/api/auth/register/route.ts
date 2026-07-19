@@ -40,8 +40,8 @@ export const POST = async (req: NextRequest) => {
         const refreshToken = await signRefreshToken({ uid: user._id?.toString() })
 
         const resp = NextResponse.json({ msg: 'ok' }, { status: 201 })
-        resp.cookies.set('atk', accessToken, { httpOnly: true, secure: false, sameSite: 'lax', path: '/', maxAge: 15 * 60 });
-        resp.cookies.set('rtk', refreshToken, { httpOnly: true, secure: false, sameSite: 'lax', path: '/', maxAge: 7 * 24 * 3600 });
+        resp.cookies.set('atk', accessToken, { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/', maxAge: 15 * 60 });
+        resp.cookies.set('rtk', refreshToken, { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/', maxAge: 7 * 24 * 3600 });
 
         return resp;
     } catch (err: any) {

@@ -1,7 +1,9 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_BASE_URL + '/api',
+  // مسیر نسبی → درخواست‌ها همیشه به همان origin صفحه می‌روند (بدون CORS)
+  // چه از localhost باز شود چه از IP شبکه یا دامنه
+  baseURL: '/api',
   withCredentials: true, // ← cookie همیشه می‌چسبد
 });
 
@@ -18,8 +20,11 @@ api.interceptors.response.use(
   async err => {
     const originalRequest = err.config;
 
-    // فقط خطای ۴۰۱ و درخواستی که قبلاً رفرش نشده
-    if (err.response?.status === 401 && !originalRequest._retry) {
+    // درخواست refresh نباید دوباره وارد چرخهٔ رفرش شود (جلوگیری از deadlock)
+    const isRefreshCall = originalRequest?.url?.includes('/auth/refresh');
+
+    // فقط خطای ۴۰۱ و درخواستی که قبلاً رفرش نشده و خودِ رفرش نباشد
+    if (err.response?.status === 401 && !originalRequest._retry && !isRefreshCall) {
       if (isRefreshing) {
         // درخواست‌های دیگر را در صف نگه می‌داریم
         return new Promise(resolve => {
@@ -36,8 +41,10 @@ api.interceptors.response.use(
         // ۲) cookie جدید اتومات جایگزین شده → درخواست اصلی را تکرار می‌کنیم
         return api(originalRequest);
       } catch (refreshErr) {
-        // رفرش هم ناموفق بود → لاگ‌اوت
-        window.location.href = '/auth';
+        // رفرش هم ناموفق بود → لاگ‌اوت (اما در خود صفحهٔ /auth ری‌دایرکت لوپ نکن)
+        if (typeof window !== 'undefined' && window.location.pathname !== '/auth') {
+          window.location.href = '/auth';
+        }
         return Promise.reject(refreshErr);
       } finally {
         isRefreshing = false;

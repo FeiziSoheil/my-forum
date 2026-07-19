@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import * as AvatarPrimitive from "@radix-ui/react-avatar"
+import { UserRound } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
@@ -36,17 +37,22 @@ function AvatarImage({
 
 function AvatarFallback({
   className,
+  children,
   ...props
 }: React.ComponentProps<typeof AvatarPrimitive.Fallback>) {
   return (
     <AvatarPrimitive.Fallback
       data-slot="avatar-fallback"
       className={cn(
-        "bg-muted flex size-full items-center justify-center rounded-full",
+        "bg-muted flex size-full items-center justify-center rounded-full text-muted-foreground",
         className
       )}
       {...props}
-    />
+    >
+      {children ?? (
+        <UserRound className="size-[55%]" strokeWidth={1.75} aria-hidden />
+      )}
+    </AvatarPrimitive.Fallback>
   )
 }
 

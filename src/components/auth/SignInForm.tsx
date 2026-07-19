@@ -4,26 +4,31 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useState } from 'react';
+import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { loginRequest } from '@/types/user';
+import { Button } from '../ui/button';
+import { AtSign, Lock, Eye, EyeOff, Loader2 } from 'lucide-react';
 
 const signInSchema = z.object({
   loginId: z.string()
     .min(1, 'Username or email is required'),
   password: z.string()
-    .min(1, 'Password is required'),
+    .min(6, 'Password is required'),
+  remember: z.boolean().optional(),
 });
 
 type SignInFormData = z.infer<typeof signInSchema>;
 
-export const SignInForm = () => {
-  const { login, loading } = useAuth();
+export const SignInForm = ({ callbackUrl }: { callbackUrl?: string }) => {
+  const { login } = useAuth();
   const [error, setError] = useState<string>('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm<SignInFormData>({
     resolver: zodResolver(signInSchema),
   });
@@ -31,69 +36,96 @@ export const SignInForm = () => {
   const onSubmit = async (data: SignInFormData) => {
     setError('');
     try {
-      await login(data as loginRequest);
+      await login(data as loginRequest, callbackUrl);
     } catch (err: any) {
       setError(err.message || 'Login failed');
     }
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 ">
-      <div>
-        <label htmlFor="loginId" className="block text-sm font-medium text-gray-700 mb-1">
-          Username or Email
-        </label>
-        <input
-          {...register('loginId')}
-          type="text"
-          id="loginId"
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-          placeholder="username or email@example.com"
-        />
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+      <div className="space-y-1.5">
+        <div className="group relative">
+          <AtSign className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-primary" />
+          <input
+            {...register('loginId')}
+            type="text"
+            id="loginId"
+            autoComplete="username"
+            placeholder="Username or email"
+            aria-invalid={!!errors.loginId}
+            className="h-12 w-full rounded-xl border border-input bg-muted/40 pl-10 pr-4 text-[15px] outline-none transition-all placeholder:text-muted-foreground/70 focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/10 aria-[invalid=true]:border-destructive aria-[invalid=true]:ring-destructive/10"
+          />
+        </div>
         {errors.loginId && (
-          <p className="mt-1 text-sm text-red-600">{errors.loginId.message}</p>
+          <p className="pl-1 text-xs text-destructive">{errors.loginId.message}</p>
         )}
       </div>
 
-      <div>
-        <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-          Password
-        </label>
-        <input
-          {...register('password')}
-          type="password"
-          id="password"
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-          placeholder="••••••••"
-        />
+      <div className="space-y-1.5">
+        <div className="group relative">
+          <Lock className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-primary" />
+          <input
+            {...register('password')}
+            type={showPassword ? 'text' : 'password'}
+            id="password"
+            autoComplete="current-password"
+            placeholder="Password"
+            aria-invalid={!!errors.password}
+            className="h-12 w-full rounded-xl border border-input bg-muted/40 pl-10 pr-11 text-[15px] outline-none transition-all placeholder:text-muted-foreground/70 focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/10 aria-[invalid=true]:border-destructive aria-[invalid=true]:ring-destructive/10"
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword((s) => !s)}
+            aria-label={showPassword ? 'Hide password' : 'Show password'}
+            className="absolute right-2.5 top-1/2 grid size-8 -translate-y-1/2 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+          </button>
+        </div>
         {errors.password && (
-          <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
+          <p className="pl-1 text-xs text-destructive">{errors.password.message}</p>
         )}
       </div>
 
       <div className="flex items-center justify-between">
-        <label className="flex items-center">
-          <input type="checkbox" className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
-          <span className="ml-2 text-sm text-gray-600">Remember me</span>
+        <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground select-none">
+          <input
+            {...register('remember')}
+            type="checkbox"
+            className="size-4 cursor-pointer rounded border-input accent-primary"
+          />
+          Remember me
         </label>
-        <a href="#" className="text-sm text-blue-600 hover:text-blue-700">
+        <Link
+          href="/auth/forgot"
+          className="text-sm font-medium text-primary transition-colors hover:underline"
+        >
           Forgot password?
-        </a>
+        </Link>
       </div>
 
       {error && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-sm text-red-600">{error}</p>
+        <div className="rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3">
+          <p className="text-sm text-destructive">{error}</p>
         </div>
       )}
 
-      <button
+      <Button
         type="submit"
-        // disabled={loading}
-        className="w-full bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 focus:ring-4 focus:ring-blue-200 disabled:opacity-50 disabled:cursor-not-allowed transition"
+        className="h-12 w-full rounded-xl text-[15px] font-semibold"
+        variant="default"
+        disabled={isSubmitting}
       >
-        {loading ? 'Signing In...' : 'Sign In'}
-      </button>
+        {isSubmitting ? (
+          <>
+            <Loader2 className="size-4 animate-spin" />
+            Signing In...
+          </>
+        ) : (
+          'Sign In'
+        )}
+      </Button>
     </form>
   );
 };

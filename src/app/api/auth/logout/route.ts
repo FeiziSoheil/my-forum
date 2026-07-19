@@ -11,7 +11,7 @@ export const POST = async (req: NextRequest) => {
 		// Clear cookies by setting empty value and maxAge: 0
 		res.cookies.set('atk', '', {
 			httpOnly: true,
-			secure: false,
+			secure: process.env.NODE_ENV === 'production',
 			sameSite: 'lax',
 			path: '/',
 			maxAge: 0,
@@ -19,7 +19,7 @@ export const POST = async (req: NextRequest) => {
 
 		res.cookies.set('rtk', '', {
 			httpOnly: true,
-			secure: false,
+			secure: process.env.NODE_ENV === 'production',
 			sameSite: 'lax',
 			path: '/',
 			maxAge: 0,

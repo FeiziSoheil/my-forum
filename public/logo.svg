@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="Parakgram">
+  <rect width="64" height="64" rx="14" fill="#141A24"/>
+  <!-- Chat bubble outline (gram) -->
+  <path
+    stroke="#E8B84A"
+    stroke-width="3.5"
+    stroke-linejoin="round"
+    d="M18 20.5c0-2.5 2-4.5 4.5-4.5h19c2.5 0 4.5 2 4.5 4.5v14c0 2.5-2 4.5-4.5 4.5H28l-6.5 6V39c-2.1-.2-3.5-2-3.5-4.5v-14Z"
+  />
+  <!-- 4-point star (parak) -->
+  <path
+    fill="#E8B84A"
+    d="M32 22 L34.6 28.4 L41 31 L34.6 33.6 L32 40 L29.4 33.6 L23 31 L29.4 28.4 Z"
+  />
+</svg>

@@ -1,103 +1,249 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+import { PostCard } from '@/components/PostCard';
+import PullToRefresh from '@/components/PullToRefresh';
+import SuggestedPeople from '@/components/SuggestedPeople';
+import StoryRail from '@/components/stories/StoryRail';
+import { useAuth } from '@/context/AuthContext';
+import { usePosts } from '@/hook/usePosts';
+import { Post } from '@/types/post';
+import { useQueryClient } from '@tanstack/react-query';
+import { Feather, Loader2, Users } from 'lucide-react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+type FeedTab = 'for-you' | 'following';
+
+export default function HomePage() {
+    const { isAuthenticated } = useAuth();
+    const [activeTab, setActiveTab] = useState<FeedTab>('for-you');
+    const queryClient = useQueryClient();
+
+    const {
+        data,
+        fetchNextPage,
+        hasNextPage,
+        isFetchingNextPage,
+        isLoading,
+        refetch,
+    } = usePosts(
+        activeTab === 'following'
+            ? { feed: 'following', enabled: isAuthenticated }
+            : isAuthenticated
+              ? { feed: 'for-you' }
+              : {}
+    );
+
+    const router = useRouter();
+    const loadMoreRef = useRef<HTMLDivElement>(null);
+
+    const handlePullRefresh = useCallback(async () => {
+        await Promise.all([
+            refetch(),
+            queryClient.invalidateQueries({ queryKey: ['stories'] }),
+            queryClient.invalidateQueries({ queryKey: ['user-suggestions'] }),
+        ]);
+    }, [queryClient, refetch]);
+
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+                    fetchNextPage();
+                }
+            },
+            { threshold: 0.1 }
+        );
+
+        if (loadMoreRef.current) {
+            observer.observe(loadMoreRef.current);
+        }
+
+        return () => observer.disconnect();
+    }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+    const handleLike = (postId: string) => {
+        console.log('Like post:', postId);
+    };
+
+    const handleReply = (postId: string) => {
+        router.push(`/post/${postId}/reply`);
+    };
+
+    const handleRepost = (postId: string) => {
+        console.log('Repost:', postId);
+    };
+
+    const handleShare = (postId: string) => {
+        console.log('Share post:', postId);
+    };
+
+    const handleMore = (postId: string) => {
+        console.log('More options for post:', postId);
+    };
+
+    const posts = data?.pages.flatMap((page) => page.posts) ?? [];
+    // Guard against rare duplicate IDs across ranked pages.
+    const seenIds = new Set<string>();
+    const uniquePosts = posts.filter((post) => {
+        const id = post._id;
+        if (!id || seenIds.has(id)) return false;
+        seenIds.add(id);
+        return true;
+    });
+
+    return (
+        <PullToRefresh onRefresh={handlePullRefresh}>
+            <main className="mx-auto w-full max-w-xl px-4 pb-32 lg:max-w-2xl lg:pb-10 xl:max-w-3xl">
+                <StoryRail />
+
+                <div className="sticky top-14 z-30 mb-1 flex border-b border-border bg-background">
+                    {([
+                        { id: 'for-you', label: 'For you' },
+                        { id: 'following', label: 'Following' },
+                    ] as { id: FeedTab; label: string }[]).map((tab) => (
+                        <button
+                            key={tab.id}
+                            type="button"
+                            onClick={() => setActiveTab(tab.id)}
+                            className="relative flex-1 py-3 text-sm font-medium transition-colors hover:bg-muted/40"
+                        >
+                            <span className={activeTab === tab.id ? 'text-foreground' : 'text-muted-foreground'}>
+                                {tab.label}
+                            </span>
+                            {activeTab === tab.id && (
+                                <span className="absolute inset-x-0 bottom-0 mx-auto h-0.5 w-12 rounded-full bg-primary" />
+                            )}
+                        </button>
+                    ))}
+                </div>
+
+                {activeTab === 'for-you' && (
+                    <SuggestedPeople limit={5} className="mb-4 mt-3" />
+                )}
+
+                {activeTab === 'following' && !isAuthenticated ? (
+                    <FollowingSignedOut />
+                ) : isLoading ? (
+                    <FeedSkeleton />
+                ) : uniquePosts.length === 0 ? (
+                    activeTab === 'following' ? <EmptyFollowing /> : <EmptyFeed />
+                ) : (
+                    <div className="divide-y divide-border/60">
+                        {uniquePosts.map((post: Post) => (
+                            <PostCard
+                                key={post._id}
+                                post={post}
+                                onLike={handleLike}
+                                onReply={handleReply}
+                                onRepost={handleRepost}
+                                onShare={handleShare}
+                                onMore={handleMore}
+                            />
+                        ))}
+                    </div>
+                )}
+
+                {/* Load more trigger */}
+                {!isLoading && uniquePosts.length > 0 && (
+                    <div ref={loadMoreRef} className="flex items-center justify-center py-8">
+                        {isFetchingNextPage ? (
+                            <Loader2 className="size-5 animate-spin text-muted-foreground" />
+                        ) : hasNextPage ? (
+                            <button
+                                onClick={() => fetchNextPage()}
+                                className="rounded-full border border-border bg-muted/40 px-5 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                            >
+                                Load more
+                            </button>
+                        ) : (
+                            <span className="text-sm text-muted-foreground">You&apos;re all caught up ✦</span>
+                        )}
+                    </div>
+                )}
+            </main>
+        </PullToRefresh>
+    );
+}
+
+function FeedSkeleton() {
+    return (
+        <div className="divide-y divide-border/60">
+            {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex gap-3 p-4">
+                    <div className="size-10 shrink-0 animate-pulse rounded-full bg-muted" />
+                    <div className="flex-1 space-y-3">
+                        <div className="flex items-center gap-2">
+                            <div className="h-3 w-24 animate-pulse rounded-full bg-muted" />
+                            <div className="h-3 w-16 animate-pulse rounded-full bg-muted/70" />
+                        </div>
+                        <div className="space-y-2">
+                            <div className="h-3 w-full animate-pulse rounded-full bg-muted" />
+                            <div className="h-3 w-4/5 animate-pulse rounded-full bg-muted" />
+                        </div>
+                        <div className="flex gap-6 pt-1">
+                            {Array.from({ length: 4 }).map((_, j) => (
+                                <div key={j} className="h-3 w-8 animate-pulse rounded-full bg-muted/70" />
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            ))}
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+    );
+}
+
+function EmptyFeed() {
+    return (
+        <div className="flex flex-col items-center justify-center px-6 py-24 text-center">
+            <div className="mb-5 grid size-16 place-items-center rounded-2xl bg-muted/60">
+                <Feather className="size-7 text-muted-foreground" />
+            </div>
+            <h2 className="text-lg font-semibold">You&apos;re caught up</h2>
+            <p className="mt-1.5 max-w-xs text-sm text-muted-foreground">
+                No more fresh posts to recommend right now. Check Following, or share something new.
+            </p>
+            <Link
+                href="/post/new"
+                className="mt-6 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 transition-transform hover:scale-105 active:scale-95"
+            >
+                Create a post
+            </Link>
+        </div>
+    );
+}
+
+function EmptyFollowing() {
+    return (
+        <div className="flex flex-col items-center justify-center px-6 py-24 text-center">
+            <div className="mb-5 grid size-16 place-items-center rounded-2xl bg-muted/60">
+                <Users className="size-7 text-muted-foreground" />
+            </div>
+            <h2 className="text-lg font-semibold">Nothing here yet</h2>
+            <p className="mt-1.5 max-w-xs text-sm text-muted-foreground">
+                Follow some people to see their posts in this feed.
+            </p>
+        </div>
+    );
+}
+
+function FollowingSignedOut() {
+    return (
+        <div className="flex flex-col items-center justify-center px-6 py-24 text-center">
+            <div className="mb-5 grid size-16 place-items-center rounded-2xl bg-muted/60">
+                <Users className="size-7 text-muted-foreground" />
+            </div>
+            <h2 className="text-lg font-semibold">Sign in to see your feed</h2>
+            <p className="mt-1.5 max-w-xs text-sm text-muted-foreground">
+                Log in to follow people and build your personalized Following feed.
+            </p>
+            <Link
+                href="/auth"
+                className="mt-6 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 transition-transform hover:scale-105 active:scale-95"
+            >
+                Sign in
+            </Link>
+        </div>
+    );
 }

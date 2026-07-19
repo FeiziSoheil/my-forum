@@ -1,149 +1,102 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SignInForm } from '@/components/auth/SignInForm';
 import { SignUpForm } from '@/components/auth/signupForm';
-import { useAuth } from '@/context/AuthContext';
-import { redirect } from 'next/navigation';
+import BrandLogo from '@/components/BrandLogo';
+import { safeCallbackUrl } from '@/lib/auth/callbackUrl';
 
-export default function AuthPage() {
+function AuthPageContent() {
   const [isSignIn, setIsSignIn] = useState(true);
-
-  // Random Unsplash themes for visual freshness
-  const unsplashImages = [
-    'https://images.unsplash.com/photo-1522199710521-72d69614c702?q=80&w=1500&auto=format&fit=crop', // workspace minimal
-    'https://images.unsplash.com/photo-1525186402429-b4ff38bedbec?q=80&w=1500&auto=format&fit=crop', // creative team
-    'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?q=80&w=1500&auto=format&fit=crop', // futuristic abstract
-    'https://images.unsplash.com/photo-1507842217343-583bb7270b66?q=80&w=1500&auto=format&fit=crop', // laptop work
-    'https://images.unsplash.com/photo-1531297484001-80022131f5a1?q=80&w=1500&auto=format&fit=crop', // tech aesthetic
-  ];
-
-  const randomImage =
-    unsplashImages[Math.floor(Math.random() * unsplashImages.length)];
-
-  const {isAuthenticated} = useAuth()
-  console.log('isAuthenticated => ', isAuthenticated);
-  
-
-  if(isAuthenticated){
-    redirect('/')
-  }
+  const searchParams = useSearchParams();
+  const callbackUrl = safeCallbackUrl(searchParams.get('callbackUrl'));
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-blue-50 p-4">
-      <div className="flex flex-col lg:flex-row w-full max-w-7xl rounded-3xl overflow-hidden shadow-2xl bg-white/70 backdrop-blur-md border border-white/20">
-        {/* LEFT SIDE — Image Section */}
-        <div className="relative hidden lg:flex w-1/2 h-[680px] overflow-hidden">
-          <img
-            src={randomImage}
-            alt="Creative workspace background"
-            className="object-cover w-full h-full scale-105 transform hover:scale-110 transition-transform duration-1000 ease-out"
-          />
+    <div className="relative flex min-h-[100dvh] flex-col items-center justify-center overflow-hidden bg-background px-5 py-10">
+      {/* Ambient background accents */}
+      <div className="pointer-events-none absolute -top-24 -right-24 size-72 rounded-full bg-primary/15 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-24 -left-24 size-72 rounded-full bg-primary/10 blur-3xl" />
 
-          {/* Gradient overlay for contrast */}
-          <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/70 via-blue-800/60 to-transparent"></div>
-
-          {/* Floating glass info card */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="absolute bottom-12 left-12 right-12 bg-white/15 backdrop-blur-lg border border-white/30 rounded-2xl p-6 shadow-lg text-white"
-          >
-            <h2 className="text-2xl font-semibold mb-2">Engage. Create. Grow.</h2>
-            <p className="text-sm text-blue-100 mb-4 leading-relaxed">
-              Step into a community built for thinkers and makers. 
-              Every conversation here is a chance to inspire or be inspired.
-            </p>
-
-            <div className="flex gap-2 flex-wrap">
-              <span className="px-3 py-1 text-sm bg-white/20 rounded-full">
-                💬 Discussions
-              </span>
-              <span className="px-3 py-1 text-sm bg-white/20 rounded-full">
-                ⚡ Inspiration
-              </span>
-              <span className="px-3 py-1 text-sm bg-white/20 rounded-full">
-                🔒 Privacy
-              </span>
-            </div>
-          </motion.div>
-
-          {/* Floating logo bubble */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.3 }}
-            className="absolute top-10 left-10 bg-white/10 backdrop-blur-xl p-4 rounded-2xl border border-white/20 shadow-lg"
-          >
-            <h1 className="text-white text-3xl font-extrabold tracking-tight">
-              MyForum
-            </h1>
-            <p className="text-blue-100 text-xs mt-1">
-              Minimal. Modern. Meaningful.
-            </p>
-          </motion.div>
-        </div>
-
-        {/* RIGHT SIDE — Auth Section */}
-        <div className="w-full lg:w-1/2 p-8 relative">
-          <div className=" backdrop-blur-xl rounded-3xl p-8  border border-white/30 relative z-10">
-            <div className="text-center mb-6">
-              <h1 className="text-3xl font-bold text-gray-800">
-                {isSignIn ? 'Welcome Back 👋' : 'Join the Community 🚀'}
-              </h1>
-              <p className="text-sm text-gray-500 mt-1">
-                {isSignIn ? 'Sign in to continue' : 'Create your account to get started'}
-              </p>
-            </div>
-
-           <div className='flex flex-col justify-center'>
-             <AnimatePresence  
-            
-            mode="wait">
-              {isSignIn ? (
-                <motion.div
-                  key="signin"
-                  initial={{ opacity: 0, x: 50 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -50 }}
-                  transition={{ duration: 0.4 }}
-                >
-                  <SignInForm />
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="signup"
-                  initial={{ opacity: 0, x: -50 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 50 }}
-                  transition={{ duration: 0.4 }}
-                >
-                  <SignUpForm />
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-           </div>
-            <div className="text-center mt-6">
-              <p className="text-sm text-gray-600">
-                {isSignIn ? "Don't have an account?" : 'Already registered?'}
-                <button
-                  onClick={() => setIsSignIn(!isSignIn)}
-                  className="ml-2 text-indigo-600 font-semibold hover:text-blue-600 transition"
-                >
-                  {isSignIn ? 'Sign Up' : 'Sign In'}
-                </button>
-              </p>
-            </div>
-          </div>
-
-          <p className="text-center text-gray-400 text-xs mt-6 bottom-12 absolute left-0 right-0 ">
-            © {new Date().getFullYear()} MyForum. All rights reserved.
+      <div className="relative z-10 w-full max-w-sm">
+        {/* Brand */}
+        <div className="mb-8 flex flex-col items-center text-center">
+          <BrandLogo href={null} size="lg" showWordmark={false} className="mb-4" />
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+            {isSignIn ? 'Welcome back' : 'Create account'}
+          </h1>
+          <p className="mt-1.5 text-sm text-muted-foreground">
+            {isSignIn
+              ? 'Sign in to continue to Parakgram'
+              : 'Join the community in a few seconds'}
           </p>
         </div>
+
+        {/* Segmented switcher */}
+        <div className="mb-6 grid grid-cols-2 gap-1 rounded-2xl border border-border/60 bg-muted/40 p-1">
+          {[
+            { key: true, label: 'Sign In' },
+            { key: false, label: 'Sign Up' },
+          ].map((tab) => (
+            <button
+              key={tab.label}
+              onClick={() => setIsSignIn(tab.key)}
+              className={`relative h-9 rounded-xl text-sm font-medium transition-colors ${
+                isSignIn === tab.key
+                  ? 'text-primary-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {isSignIn === tab.key && (
+                <motion.span
+                  layoutId="auth-tab-pill"
+                  className="absolute inset-0 rounded-xl bg-primary shadow-sm"
+                  transition={{ type: 'spring', stiffness: 400, damping: 32 }}
+                />
+              )}
+              <span className="relative">{tab.label}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Forms */}
+        <AnimatePresence mode="wait">
+          {isSignIn ? (
+            <motion.div
+              key="signin"
+              initial={{ opacity: 0, x: 24 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -24 }}
+              transition={{ duration: 0.25, ease: 'easeOut' }}
+            >
+              <SignInForm callbackUrl={callbackUrl} />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="signup"
+              initial={{ opacity: 0, x: -24 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 24 }}
+              transition={{ duration: 0.25, ease: 'easeOut' }}
+            >
+              <SignUpForm callbackUrl={callbackUrl} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <p className="mt-8 text-center text-xs text-muted-foreground">
+          © {new Date().getFullYear()} Parakgram
+        </p>
       </div>
     </div>
+  );
+}
+
+export default function AuthPage() {
+  return (
+    <Suspense fallback={null}>
+      <AuthPageContent />
+    </Suspense>
   );
 }

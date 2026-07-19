@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
 
     const userId = payload.uid as string;
     const user  = await UserModel.findById(userId).lean<User>();
-    if (!user) return NextResponse.json({ msg: 'User not found' }, { status: 401 });
+    if (!user || user.isDeleted) return NextResponse.json({ msg: 'User not found' }, { status: 401 });
 
 
     const newAtk = await signAccessToken({ uid: user._id?.toString() });
@@ -31,8 +31,8 @@ export async function POST(req: NextRequest) {
 
 
     const res = NextResponse.json({ msg: 'token refreshed' });
-    res.cookies.set('atk', newAtk, { httpOnly: true, secure: false, sameSite: 'lax', path: '/', maxAge: 15 * 60 });
-    res.cookies.set('rtk', newRtk, { httpOnly: true, secure: false, sameSite: 'lax', path: '/', maxAge: 7 * 24 * 3600 });
+    res.cookies.set('atk', newAtk, { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/', maxAge: 15 * 60 });
+    res.cookies.set('rtk', newRtk, { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/', maxAge: 7 * 24 * 3600 });
     return res;
   } catch (err: any) {
     return NextResponse.json({ msg: err.message }, { status: 500 });

@@ -1,151 +1,292 @@
-# تحلیل پروژه Forum - My Forum
+# تحلیل پروژه Forum — Parakgram
 
-## 📋 خلاصه پروژه
+## خلاصه پروژه
 
-پروژه **My Forum** یک اپلیکیشن وب فوروم است که با استفاده از **Next.js 15** و **TypeScript** توسعه یافته است. این پروژه از معماری مدرن و بهترین practices استفاده می‌کند.
+**Parakgram** (برگرفته از «پرک» — ستاره سهیل) یک اپلیکیشن اجتماعی/فوروم وب است که با **Next.js 15** و **TypeScript** ساخته شده. محصول فعلی فراتر از احراز هویت و پست است و شامل فید، پاسخ تو در تو، استوری، پیام مستقیم، نوتیفیکیشن، فالو، تگ، جستجو (Explore) و پروفایل می‌شود.
 
-## 🛠️ تکنولوژی‌های استفاده شده
+این سند وضعیت **واقعی محصول فعلی** را توصیف می‌کند — نه برنامهٔ ایده‌آل و نه نسخهٔ قدیمی «فقط auth + پست».
+
+## تکنولوژی‌ها
 
 ### Frontend
 
-- **Next.js 15.5.4** - فریمورک React با App Router
-- **React 19.1.0** - کتابخانه UI
-- **TypeScript 5** - زبان برنامه‌نویسی
-- **Tailwind CSS 4** - فریمورک CSS
-- **shadcn/ui** - سیستم کامپوننت‌های UI
-- **React Hook Form** - مدیریت فرم‌ها
-- **TanStack Query** - مدیریت state و caching
+| فناوری | نقش |
+| --- | --- |
+| Next.js 15.5.4 (App Router) | فریمورک و روتینگ |
+| React 19.1.0 | UI |
+| TypeScript 5 | تایپ |
+| Tailwind CSS 4 | استایل |
+| shadcn/ui + Radix | کامپوننت‌های پایه |
+| TanStack Query | کش و state سمت کلاینت |
+| React Hook Form + Zod | فرم و اعتبارسنجی |
+| Framer Motion / Swiper | انیمیشن و گالری |
+| next-themes | تم روشن/تاریک و تم‌های سفارشی |
+| Lucide React | آیکون |
 
-### Backend & Database
+### Backend & داده
 
-- **MongoDB** - پایگاه داده NoSQL
-- **Mongoose 8.19.1** - ODM برای MongoDB
-- **bcrypt** - هش کردن پسورد
-- **JWT (jose)** - احراز هویت و authorization
+| فناوری | نقش |
+| --- | --- |
+| MongoDB + Mongoose 8.19 | پایگاه داده و ODM |
+| JWT (`jose`) + کوکی `atk` / `rtk` | احراز هویت |
+| bcrypt | هش پسورد |
+| Axios | کلاینت HTTP |
+| formidable / آپلود محلی | رسانه در `public/uploads` |
+| SSE (stream routes) | نوتیفیکیشن و چت زنده |
 
-### Development Tools
+### مدل‌های اصلی (`src/models`)
 
-- **ESLint** - لینت کردن کد
-- **Turbopack** - بیلد سریع‌تر
-- **Lucide React** - آیکون‌ها
+`User` · `Post` · `Reply` · `Story` · `Conversation` · `Message` · `Notification`
 
-## 📁 ساختار پروژه
+## ساختار پروژه (خلاصه)
 
 ```
 src/
-├── app/                    # App Router (Next.js 15)
-│   ├── api/               # API Routes
-│   │   └── auth/          # Authentication endpoints
-│   │       ├── login/     # Login API ✅
-│   │       └── register/  # Register API ✅
-│   ├── auth/              # Auth pages
-│   ├── layout.tsx         # Root layout
-│   └── page.tsx           # Home page
-├── components/            # React components
-│   ├── auth/              # Authentication components
-│   ├── providers/         # Context providers
-│   └── ui/                # shadcn/ui components
-├── lib/                   # Utility libraries
-│   ├── auth/              # Auth helpers & JWT
-│   └── db/                # Database connection
-├── models/                # Mongoose models
-└── types/                 # TypeScript types
+├── app/
+│   ├── api/           # Route Handlers (auth, post, user, stories, conversations, notifications, tags, users)
+│   ├── auth/          # ورود / ثبت‌نام
+│   ├── likes/         # Activity (نوتیفیکیشن‌ها)
+│   ├── messages/      # لیست و اتاق چت
+│   ├── post/          # جزئیات پست + ساخت پست
+│   ├── profile/       # پروفایل من و دیگران (+ followers/following)
+│   ├── search/        # Explore (Users / Tags / Posts)
+│   ├── settings/      # ویرایش پروفایل + تم
+│   ├── stories/new/   # ساخت استوری
+│   └── tag/[slug]/    # فید بر اساس تگ
+├── components/        # UI دامنه: auth, chat, post, profile, stories, …
+├── hook/              # React Query hooks
+├── layout/            # Header + Navigation
+├── lib/               # auth, db, chat, mentions, tags, notifications, …
+├── models/            # Mongoose
+├── middleware.ts      # محافظت روت‌ها + callbackUrl
+└── types/
+scripts/               # seedUsers, seedPosts, seedReplies, backfillTags
 ```
 
-## ✅ کارهای انجام شده
+## کارهای انجام‌شده (وضعیت واقعی)
 
-### 1. راه‌اندازی پروژه
+### احراز هویت و نشست
 
-- ✅ ایجاد پروژه Next.js با TypeScript
-- ✅ پیکربندی Tailwind CSS 4
-- ✅ نصب و پیکربندی shadcn/ui
-- ✅ تنظیم path aliases در tsconfig.json
+- ثبت‌نام، ورود، خروج، `/api/auth/me`، رفرش توکن
+- کوکی‌های امن Access/Refresh؛ middleware برای روت‌های محافظت‌شده
+- ریدایرکت به `/auth` با `callbackUrl` امن؛ بازگشت پس از login/register
+- محافظت `/settings` (و همچنین `/profile`، `/messages`، `/likes`، `/post/new`، `/stories/new`)
+- **ندارد:** بازیابی/تغییر پسورد، Remember me، تأیید ایمیل واقعی (فیلد `verified` وجود دارد ولی فلو کامل نیست)
 
-### 2. سیستم احراز هویت (Authentication) - **100% تکمیل**
+### پست، لایک، ریپاست، تگ، منشن
 
-- ✅ **User Model** - مدل کاربر با Mongoose
+- ساخت پست (متن + رسانه، استخراج هشتگ و منشن)
+- فید با cursor pagination؛ فیلتر `tag` و جستجوی متنی `q`
+- لایک / آنلایک، ریپاست / برداشتن ریپاست
+- ویرایش و حذف پست (API)
+- صفحهٔ تگ `/tag/[slug]`
+- پیشنهاد تگ: `GET /api/tags/suggest`
 
-  - فیلدهای: username, fullname, email, password, verified
-  - validation و constraints مناسب
-  - timestamps خودکار
-- ✅ **JWT Authentication**
+### پاسخ‌ها (از جمله تو در تو — P4)
 
-  - توکن‌های Access و Refresh
-  - توابع sign و verify برای JWT
-  - مدیریت cookies امن
-- ✅ **Password Security**
+- پاسخ به پست و لایک پاسخ
+- ویرایش / حذف پاسخ
+- پاسخ تو در تو با `parentReply` و `threadLevel` (۰ تا ۲؛ حداکثر عمق ۲)
+- UI تخت با تورفتگی (`ReplyCard`)؛ دکمهٔ Reply در عمق حداکثر غیرفعال می‌شود
 
-  - هش کردن پسورد با bcrypt
-  - salt rounds = 12
-  - توابع hash و verify
-- ✅ **Register API** (`/api/auth/register`)
+### پروفایل و فالو (P1)
 
-  - validation کامل فرم
-  - بررسی تکراری نبودن email و username
-  - بررسی فرمت email
-  - بررسی تطابق پسوردها
-  - ایجاد کاربر جدید
-  - تنظیم cookies امن
-- ✅ **Login API** (`/api/auth/login`)
+- پروفایل خودم و دیگران: پست‌ها / پاسخ‌ها / ریپاست‌ها
+- ویرایش پروفایل (آواتار با crop، نام، bio و …) از Settings و API `PATCH /api/user`
+- فالو / آنفالو
+- لیست followers / following (API + صفحات؛ شمارنده‌ها قابل کلیک)
 
-  - validation ورودی‌ها
-  - جستجوی کاربر با username یا email
-  - بررسی صحت پسورد
-  - تولید و تنظیم JWT tokens
-  - مدیریت cookies امن
-- ✅ **TypeScript Types**
+### استوری
 
-  - User interface
-  - RegisterRequest interface
-  - loginRequest interface
+- متن و تصویر؛ لایک، ویو، viewers، پاسخ استوری (به‌سمت DM)
+- ریل و viewer در UI؛ انقضا ۲۴ ساعته در کوئری
+- **ندارد:** استوری ویدیو؛ job پاکسازی TTL برای اسناد منقضی
 
-### 3. پایگاه داده
+### پیام مستقیم (P3)
 
-- ✅ **MongoDB Connection**
-  - اتصال به MongoDB با Mongoose
-  - connection caching برای performance
-  - مدیریت global connection
+- گفتگوی ۱:۱؛ متن و تصویر؛ ریپلای داخل چت؛ ری‌اکشن
+- اشتراک پست / پاسخ استوری در چت
+- soft-delete پیام (`deletedAt`)؛ forward به گفتگو/کاربر دیگر
+- SSE برای استریم پیام‌ها
+- حذف stub آفلاین و دکمهٔ voice از UI
+- **ندارد:** گروه، voice message، presence واقعی؛ نوتیفیکیشن جدا برای DM
 
-### 4. UI Components (shadcn/ui)
+### نوتیفیکیشن / Activity (P0)
 
-- ✅ **Button** - کامپوننت دکمه با variants مختلف
-- ✅ **Card** - کامپوننت کارت با header, content, footer
-- ✅ **Form** - سیستم فرم با React Hook Form
-- ✅ **Input** - کامپوننت input با styling
-- ✅ **Label** - کامپوننت label
-- ✅ **Sonner** - سیستم toast notifications
+- صفحه `/likes` با برچسب ناوبری **Activity**
+- انواع: like_post، like_reply، repost، follow، reply، mention، like_story، story_reply
+- لیست، خواندن، unread-count، SSE stream
+- حذف stubهای **Subscription** و **Forgot password** از ناوبری/منو
 
-### 5. State Management
+### جستجو / Explore (P2)
 
-- ✅ **TanStack Query Provider**
-  - پیکربندی QueryClient
-  - Provider برای کل اپلیکیشن
+- `/search` با تب‌های Users / Tags / Posts
+- دکمهٔ جستجو در Header
+- کاربران: `GET /api/users/search`؛ تگ‌ها: suggest؛ پست‌ها: `GET /api/post?q=`
 
-### 6. Styling & Design System
+### تنظیمات (جزئی)
 
-- ✅ **Tailwind CSS 4** با پیکربندی مدرن
-- ✅ **Dark/Light Mode** support
-- ✅ **Custom CSS Variables** برای theme
-- ✅ **Responsive Design** ready
+- `/settings`: ویرایش پروفایل + انتخاب تم
+- **ندارد:** حریم خصوصی، ترجیحات نوتیف، حذف حساب، تغییر پسورد
 
-## 🚀 نحوه اجرای پروژه
+### زیر و تم
+
+- تم روشن/تاریک و تم‌های سفارشی (`src/lib/themes.ts`)
+- Layout شرطی، Header، Navigation پایین با badge پیام و Activity
+
+## صفحات اصلی
+
+| مسیر | توضیح | محافظت |
+| --- | --- | --- |
+| `/` | فید خانه + استوری ریل | خیر |
+| `/auth` | ورود / ثبت‌نام (+ `callbackUrl`) | مهمان |
+| `/post/new` | ساخت پست | ✅ |
+| `/post/[id]` | جزئیات پست + پاسخ‌های تو در تو | خیر |
+| `/tag/[slug]` | فید تگ | خیر |
+| `/search` | Explore | خیر |
+| `/likes` | Activity | ✅ |
+| `/messages` · `/messages/[id]` | چت | ✅ |
+| `/profile` · `/profile/(me)/*` | پروفایل من | ✅ |
+| `/profile/[username]/*` | پروفایل عمومی + followers/following | ✅ (پیشوند) |
+| `/settings` | تنظیمات جزئی | ✅ |
+| `/stories/new` | ساخت استوری | ✅ |
+
+## نمای کلی API
+
+احراز هویت با کوکی `atk` مگر خلافش ذکر شود.
+
+### Auth — `/api/auth`
+
+| متد | مسیر | توضیح |
+| --- | --- | --- |
+| `POST` | `/register` · `/login` | ثبت‌نام / ورود + کوکی |
+| `POST` | `/logout` | حذف کوکی |
+| `GET` | `/me` | کاربر جاری |
+| `POST` | `/refresh` | تمدید access با `rtk` |
+
+### Posts & replies — `/api/post`
+
+| متد | مسیر | توضیح |
+| --- | --- | --- |
+| `GET` | `/post` | لیست؛ `limit`، `cursor`، `tag`، `q` |
+| `POST` | `/post` | ساخت پست (multipart) |
+| `GET` · `PATCH` · `DELETE` | `/post/[id]` | جزئیات / ویرایش / حذف |
+| `POST` · `DELETE` | `/post/[id]/like` | لایک |
+| `POST` · `DELETE` | `/post/[id]/repost` | ریپاست |
+| `GET` · `POST` | `/post/[id]/replies` | لیست / ساخت (اختیاری `parentReply`) |
+| `PATCH` · `DELETE` | `.../replies/[replyId]` | ویرایش / حذف پاسخ |
+| `POST` · `DELETE` | `.../replies/[replyId]/like` | لایک پاسخ |
+
+### User & social — `/api/user` · `/api/users`
+
+| متد | مسیر | توضیح |
+| --- | --- | --- |
+| `PATCH` | `/user` | به‌روزرسانی پروفایل من |
+| `GET` | `/user/posts` · `/replies` · `/reposts` | محتوای من |
+| `GET` | `/user/[username]` | پروفایل عمومی |
+| `GET` | `/user/[username]/posts` · `/replies` · `/reposts` | محتوای کاربر |
+| `POST` · `DELETE` | `/user/[username]/follow` | فالو / آنفالو |
+| `GET` | `/user/[username]/followers` · `/following` | لیست‌ها |
+| `GET` | `/users/search` | جستجوی کاربر |
+
+### Stories — `/api/stories`
+
+| متد | مسیر | توضیح |
+| --- | --- | --- |
+| `GET` · `POST` | `/stories` | لیست فعال / ساخت |
+| `GET` · `DELETE` | `/stories/[id]` | جزئیات / حذف |
+| `POST` | `/stories/[id]/like` · `/view` · `/reply` | تعامل |
+| `GET` | `/stories/[id]/viewers` | بینندگان |
+
+### Chat — `/api/conversations`
+
+| متد | مسیر | توضیح |
+| --- | --- | --- |
+| `GET` · `POST` | `/conversations` | لیست / شروع گفتگو |
+| `GET` | `/conversations/[id]` | جزئیات |
+| `GET` · `POST` | `.../messages` | تاریخچه / ارسال |
+| `DELETE` | `.../messages/[messageId]` | soft-delete |
+| `POST` | `.../messages/[messageId]/forward` | فوروارد |
+| `POST` · `DELETE` | `.../messages/[messageId]/react` | ری‌اکشن |
+| `POST` | `.../read` | علامت خوانده‌شده |
+| `GET` | `.../stream` | SSE |
+
+### Notifications — `/api/notifications`
+
+| متد | مسیر | توضیح |
+| --- | --- | --- |
+| `GET` | `/notifications` | لیست |
+| `POST` | `/notifications/read` | خواندن |
+| `GET` | `/unread-count` · `/stream` | شمارش / SSE |
+
+### Tags
+
+| متد | مسیر | توضیح |
+| --- | --- | --- |
+| `GET` | `/api/tags/suggest` | پیشنهاد هشتگ |
+
+## دادهٔ آزمایشی (Seed)
+
+| اسکریپت | کاربرد |
+| --- | --- |
+| `scripts/seedUsers.mjs` | حدود ۲۰۰ کاربر رندوم؛ پسورد مشترک `Password123`؛ خروجی `scripts/seed-users.output.json` |
+| `scripts/seedPosts.mjs` | پست‌های آزمایشی |
+| `scripts/seedReplies.mjs` | پاسخ‌های آزمایشی |
+| `scripts/backfillTags.mjs` | پر کردن تگ‌های استخراج‌شده |
 
 ```bash
-# نصب dependencies
-npm install
-
-# اجرای development server
-npm run dev
-
-# بیلد production
-npm run build
-npm start
+node --env-file=.env scripts/seedUsers.mjs
 ```
 
-## 📊 وضعیت کلی پروژه
+## اجرای پروژه
 
-- **پیشرفت کلی**: 45%
-- **Authentication**: 100% تکمیل ✅
-- **Database**: 100% راه‌اندازی شده ✅
-- **UI Components**: 100% آماده ✅
-- **Forum Features**: 0% (آماده برای شروع)
+```bash
+npm install
+npm run dev      # Turbopack
+npm run build && npm start
+```
+
+## کارهای باقی‌مانده (صادقانه)
+
+مرتب‌شده تقریباً بر اساس ارزش محصول / پیچیدگی:
+
+| اولویت پیشنهادی | مورد | وضعیت |
+| --- | --- | --- |
+| بالا | Bookmarks / ذخیره‌ها | پیاده‌سازی نشده |
+| بالا | بازیابی / تغییر پسورد · Remember me | پیاده‌سازی نشده |
+| بالا | فلو تأیید ایمیل | فقط فیلد `verified`؛ بدون فلو کامل |
+| متوسط | Block / mute / report | پیاده‌سازی نشده |
+| متوسط | Visibility و pin پست | در اسکیما هست؛ در محصول استفاده نشده |
+| متوسط | فید فقط Following | پیاده‌سازی نشده |
+| متوسط | عمق Settings (حریم خصوصی، ترجیح نوتیف، حذف حساب) | جزئی |
+| متوسط | نوتیفیکیشن برای DM | پیاده‌سازی نشده |
+| پایین‌تر | چت گروهی · voice · presence واقعی | پیاده‌سازی نشده |
+| پایین‌تر | استوری ویدیو · پاکسازی TTL استوری‌های منقضی | ناقص |
+| اختیاری | Subscription / اشتراک ویژه | حذف stub؛ فیچر نیست |
+| انجام‌شده در این دور | به‌روزرسانی همین سند (قبلاً ~۷۰٪ و فقط auth+پست بود) | ✅ |
+
+### موارد تکمیل‌شده در دور اخیر (P0–P4)
+
+- **P0:** برچسب Activity؛ حذف Subscription و Forgot password؛ محافظت Settings؛ `callbackUrl`
+- **P1:** API و صفحات followers/following + شمارنده‌های قابل کلیک
+- **P2:** Explore `/search`؛ جستجو در Header؛ `GET /api/post?q=`
+- **P3:** soft-delete و forward چت؛ حذف Offline stub و دکمه voice
+- **P4:** پاسخ تو در تو تا `threadLevel` ۲ با UI تورفتگی
+
+## وضعیت کلی پیشرفت
+
+برآورد نسبت به یک محصول اجتماعی کامل (نه فقط MVP پست):
+
+| حوزه | پیشرفت تقریبی |
+| --- | --- |
+| احراز هویت و نشست | ~۸۵٪ (بدون reset/verify/email flow) |
+| پست / پاسخ / لایک / ریپاست / تگ | ~۹۰٪ (بدون bookmark، pin، visibility، فید following) |
+| پروفایل و فالو | ~۹۵٪ |
+| استوری | ~۷۵٪ (بدون ویدیو و TTL cleanup) |
+| پیام مستقیم | ~۸۰٪ (۱:۱ قوی؛ بدون گروه/voice/presence/DM notif) |
+| نوتیفیکیشن / Activity | ~۸۵٪ (بدون نوتیف DM و ترجیحات) |
+| جستجو / Explore | ~۹۰٪ |
+| تنظیمات | ~۴۰٪ |
+| **پیشرفت کلی محصول** | **~۸۸٪** |
+
+عدد قبلی سند (~۷۰٪) مربوط به حالت قدیمی «عمدتاً auth + پست» بود و دیگر معتبر نیست.
